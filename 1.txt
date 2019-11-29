@@ -1,0 +1,64 @@
+1.props:
+  1.1string：
+    父组件：<PropsString v-bind:message="Strings"> </PropsString>
+    子组件：props:["message"],<span>{{num}}</span>
+           子组件需要在data中 return num:this.$props.message  只能修改num的值，修改字符串的值不会影响父组件的值
+  1.2object：
+    父组件：<PropsObj v-bind:message="Obj"> </PropsObj>
+    子组件：props:["message"],<span>{{message.a}}</span>
+            子组件可以直接修改引用地址的值，并且父组件的值也会跟着改变
+  2.子向父传值：
+    2.1自定义函数
+      多用于‘子传父’，在父组件中定义函数并声明形参，将函数通过props传递给子组件，在子组件中调用该函数并传入实参
+      父组件：<Fun v-bind:message="fun"></Fun>  methods:{ fun(data){}}
+      子组件：props:["message"],methods: { jia(){ this.$props.message(11)
+2.slot：
+  a)	多用于‘向组件内部传递标签数据’
+  父组件：<Slots>  <h1>1</h1>  <h2 slot="up">2</h2>  </Slots>
+  子组件：<slot></slot>     <h2 slot="up">2</h2>
+3.$emit $on：
+  3.1子组件向父组件传值：
+        父组件通过props给子组件传值，子组件通过$emit触发父组件的事件来修改父组件的值进而修改父组件传给子组件的值
+    父组件：<EmitOne @showCityName="updateCity" v-bind:message="toCity"></EmitOne>    
+            updateCity(data) { this.toCity = data.cityname; //改变了父组件的值
+    子组件：<button @click="select(`大连`)">点击此处将‘大连’发射给父组件</button>
+            select(val) {let data = {cityname: val};
+            this.$emit("showCityName", data); //select事件触发后，自动触发showCityName事件}
+  3.2兄弟/跨级组件通信：
+      首先要注意当在不同的组件中使用$emit,$on的自定义事件机制是不能进行通信的，
+      如果在不同的组件中使用$emit,$on需要绑定事件和触发事件的对象是同一个对象，
+      即在vue的同一个‘事件总线EventBus’中
+    main.js：export const bus = new Vue()
+    one：import {bus} from '../main'
+         bus.$emit('test',data)
+    two：import {bus} from '../main'
+         bus.$on('test',function(a){  console.log(a) })
+4.自定义消息机制(pubsub, eventbus)  兄弟，父子，祖孙，跨级 
+      npm i pubsub-js -S
+    one：import PubSub from 'pubsub-js';
+         PubSub.publish("Pubsubone", this.num) // 参数一：消息名；参数二：需要传递的参数数据
+    two：import PubSub from 'pubsub-js';
+         PubSub.subscribe('Pubsubone',(msg,data)=>{参数一：消息名；参数二：传递的参数数据
+5.$attrs/$listeners
+  5.1$attrs和inheritAttrs：
+      $attrs主要用于父组件向孙组件传值
+    父组件：<Zi   :foo="foo" :coo="coo" :doo="doo" ></Zi>
+    子组件：props:["foo"],  this.$attrs为除了foo的其他属性
+           <Sun  v-bind="$attrs"  :foo="foo"> </Sun>
+    孙组件：<p>coo:{{this.$attrs.coo}}</p>
+        inheritAttrs主要用于孙组件来修改父组件的值
+    父组件：<Zi v-on:upC="c"></Zi>      c(data){  console.log(data) }
+    子组件：<Sun v-on="$listeners" > </Sun>
+    孙组件：cc(){  this.$emit("upC",'孙传给父');  }
+6.provide/inject
+      用于祖先和后代通信，要有后代链关系
+    父组件：provide: {  name: '浪里行舟'  },
+    后代组件： inject: ["name"],  传入的非引用变量就为非响应式数据
+    响应式1：提供祖先组件的实例  provide: { name: '浪里行舟',theme: this },
+    响应式2：使用2.6最新API Vue.observable 优化响应式 provide
+            provide() {   this.theme = Vue.observable({   name: "浪里行舟"  });
+            return {  theme: this.theme };      },
+7.$parent / $children
+    this.$parent ：当前组件的父组件的实例
+    this.$children：当前组件的子组件的实例
+8.vuex
